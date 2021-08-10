@@ -11,6 +11,3 @@ set(UROS_APP_SRCS
   ${UROS_APP_FOLDER}/app.c
   ${UROS_APP_FOLDER}/driver/src/driver.c
 )
-
-# message("AJB: INCLUDES: " ${UROS_APP_INCLUDES})
-# message("AJB: SRCS: " ${UROS_APP_SRCS})
