@@ -84,7 +84,7 @@ echo "Devices '$devices'"
 docker_dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &>/dev/null && pwd )"
 . ${docker_dir}/vars.bash
 # Use the repo root dir for the code dir.
-CODE_DIR=${docker_dir}/../..
+CODE_DIR=${docker_dir}/..
 
 mkdir -p ${WORKSPACE_DIR}
 cp -f ${docker_dir}/setup*.bash ${WORKSPACE_DIR}

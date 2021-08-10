@@ -17,6 +17,6 @@ index 19c451f..1d8f60b 100644
 +                       INCLUDE_DIRS "." ${UROS_APP_INCLUDES}
 +)
 +
- 
+
  set(EXTENSIONS_DIR ${COMPONENT_DIR}/..)
  set(UROS_DIR       ${COMPONENT_DIR}/../../../mcu_ws)

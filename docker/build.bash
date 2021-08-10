@@ -2,10 +2,7 @@
 set -e
 
 # Copy code over.
-rm -rf /home/build/ws/firmware/mcu_ws/raspi_robot_msgs/
-cp -rf /home/build/code/raspi-robot-esp32/raspi_robot_msgs/ /home/build/ws/firmware/mcu_ws/
-cp -rf /home/build/code/raspi-robot-esp32/raspi_robot_msgs/ /home/build/ws/src
-cp -rf /home/build/code/raspi-robot-esp32/rover/raspi_rover/ /home/build/ws/firmware/freertos_apps/apps
+cp -rf /home/build/code/multi_file_demo/ /home/build/ws/firmware/freertos_apps/apps
 
 # Build the new code.
 cd /home/build/ws
