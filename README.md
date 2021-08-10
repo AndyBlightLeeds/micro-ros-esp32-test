@@ -16,3 +16,7 @@ The main idea for this repo is to be able to generate pull requests that contain
 The problems listed in the objectives above were discovered whilst developing my [ESP32 based RasPi robot](https://github.com/AndyBlightLeeds/raspi-robot-esp32).  The robot is fairly simple but needs to support a number of ROS messages, and I hit limits with the number of publishers and services.
 
 When you start implementing drivers etc., you need to use more than just one file, so I implemented a CMAKE fix to allow a project to have many files.
+
+## Getting started
+
+Follow [these instructions](docker/README.md) to setup the docker and workspace used to build the project.
