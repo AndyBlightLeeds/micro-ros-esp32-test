@@ -26,7 +26,10 @@ source install/local_setup.bash
 
 # Run micro-ROS tools to setup application for ESP32.
 ros2 run micro_ros_setup create_firmware_ws.sh freertos esp32
-ros2 run micro_ros_setup configure_firmware.sh int32_publisher -t udp -i 192.168.1.1 -p 8888
+
+# Copy in our code and configure application.
+cp -rf ~/code/publishers/ ~/ws/firmware/freertos_apps/apps
+ros2 run micro_ros_setup configure_firmware.sh publishers -t udp -i 192.168.54.1 -p 8888
 
 echo
 echo "Now use this command:"
