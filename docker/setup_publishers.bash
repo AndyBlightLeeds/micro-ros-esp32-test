@@ -37,6 +37,6 @@ echo "ros2 run micro_ros_setup build_firmware.sh menuconfig"
 echo "to setup the IP address of the host PC, Wi-Fi SSID and password."
 echo
 echo "Then build and flash using:"
-echo "ros2 run micro_ros_setup build_firmware.sh"
+echo "./build.bash"
 echo "ros2 run micro_ros_setup flash_firmware.sh "
 echo
