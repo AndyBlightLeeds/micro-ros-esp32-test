@@ -36,7 +36,7 @@
  * ********** IMPORTANT: CHANGE VALUES IN app-colcon.meta.  *********
  */
 #define TIMER_HANDLE_COUNT (1)
-#define SUBSCRIBER_HANDLE_COUNT (3)
+#define SUBSCRIBER_HANDLE_COUNT (1)
 #define EXECUTOR_HANDLE_COUNT (TIMER_HANDLE_COUNT + SUBSCRIBER_HANDLE_COUNT)
 
 rcl_publisher_t publisher_battery_state;
@@ -114,8 +114,8 @@ void appMain(void *arg) {
   // Create timer.
   ESP_LOGI(TAG, "Creating timers");
   rcl_timer_t timer = rcl_get_zero_initialized_timer();
-  const unsigned int timer_timeout = 1000;
-  RCCHECK(rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(timer_timeout),
+  const unsigned int timer_timeout_ms = 1000;
+  RCCHECK(rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(timer_timeout_ms),
                                   timer_callback));
 
   // Create executor.
@@ -123,8 +123,8 @@ void appMain(void *arg) {
   rclc_executor_t executor = rclc_executor_get_zero_initialized_executor();
   RCCHECK(rclc_executor_init(&executor, &support.context, EXECUTOR_HANDLE_COUNT,
                              &allocator));
-  unsigned int rcl_wait_timeout = 1000;  // in ms
-  RCCHECK(rclc_executor_set_timeout(&executor, RCL_MS_TO_NS(rcl_wait_timeout)));
+  unsigned int rcl_wait_timeout_ms = 1000;  // in ms
+  RCCHECK(rclc_executor_set_timeout(&executor, RCL_MS_TO_NS(rcl_wait_timeout_ms)));
   RCCHECK(rclc_executor_add_timer(&executor, &timer));
 
   ESP_LOGI(TAG, "Adding subs");
