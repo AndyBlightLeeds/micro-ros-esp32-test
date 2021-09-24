@@ -48,9 +48,7 @@ rcl_publisher_t publisher_range_2;
 rcl_publisher_t publisher_range_3;
 rcl_publisher_t publisher_range_4;
 rcl_publisher_t publisher_range_5;
-#if 0
 rcl_publisher_t publisher_range_6;
-#endif
 
 // Logging name.
 static const char *TAG = "test";
@@ -60,9 +58,8 @@ static const char *k_range_2 = "sensors/tof2";
 static const char *k_range_3 = "sensors/tof3";
 static const char *k_range_4 = "sensors/tof4";
 static const char *k_range_5 = "sensors/tof5";
-#if 0
 static const char *k_range_6 = "sensors/tof6";
-#endif
+
 // Messages to publish.  Be lazy and use the same message for all range sensors.
 static sensor_msgs__msg__Range *range_msg = NULL;
 
@@ -106,6 +103,13 @@ static void publish_range_5(void) {
   RCLC_UNUSED(rc);
 }
 
+static void publish_range_6(void) {
+  range_msg->range = 1.6;
+  ESP_LOGI(TAG, "Sending range: %f", range_msg->range);
+  rcl_ret_t rc = rcl_publish(&publisher_range_6, range_msg, NULL);
+  RCLC_UNUSED(rc);
+}
+
 static void timer_callback(rcl_timer_t *timer, int64_t last_call_time) {
   ESP_LOGI(TAG, "Timer called.");
   if (timer != NULL) {
@@ -114,6 +118,7 @@ static void timer_callback(rcl_timer_t *timer, int64_t last_call_time) {
     publish_range_3();
     publish_range_4();
     publish_range_5();
+    publish_range_6();
   }
 }
 
@@ -158,6 +163,11 @@ void appMain(void *arg) {
       &publisher_range_5, &node,
       ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Range),
       k_range_5));
+
+  RCCHECK(rclc_publisher_init_default(
+      &publisher_range_6, &node,
+      ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Range),
+      k_range_6));
 
   // Create timer.
   ESP_LOGI(TAG, "Creating timers");
