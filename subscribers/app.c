@@ -1,3 +1,6 @@
+#include <esp_log.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 #include <rcl/error_handling.h>
 #include <rcl/rcl.h>
 #include <rclc/executor.h>
@@ -7,14 +10,8 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#ifdef ESP_PLATFORM
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#endif
-
-#include "esp_log.h"
 #include "geometry_msgs/msg/twist.h"
-#include "sensor_msgs/msg/range.h"
+#include "sensor_msgs/msg/battery_state.h"
 
 #define RCCHECK(fn)                                                 \
   {                                                                 \
@@ -34,65 +31,57 @@
     }                                                                 \
   }
 
-// Tick definitions.
-#define TICK_RATE_HZ (10)
-#define MS_PER_TICK (1000 / TICK_RATE_HZ)
-#define US_PER_TICK (MS_PER_TICK * 1000)
-
 /* Number of executor handles.
  * Publishers don't count as they are driven by the timer.
  * ********** IMPORTANT: CHANGE VALUES IN app-colcon.meta.  *********
  */
 #define TIMER_HANDLE_COUNT (1)
-#define SUBSCRIBER_HANDLE_COUNT (1)
+#define SUBSCRIBER_HANDLE_COUNT (3)
 #define EXECUTOR_HANDLE_COUNT (TIMER_HANDLE_COUNT + SUBSCRIBER_HANDLE_COUNT)
 
-rcl_publisher_t publisher_range_1;
-rcl_subscription_t subscriber_cmd_vel_1;
+rcl_publisher_t publisher_battery_state;
+rcl_subscription_t subscriber_cmd_vel;
 
 // Logging name.
-static const char *TAG = "test";
-// Standard topic/service names.
-static const char *k_range_1 = "sensors/tof1";
-static const char *k_cmd_vel_1 = "cmd_vel_1";
+static const char *TAG = "swarm_trooper";
+// Standard topic names.
+static const char *k_battery_state = "battery_state";
+static const char *k_cmd_vel = "cmd_vel";
+// Messages to publish.
+static sensor_msgs__msg__BatteryState *battery_state_msg = NULL;
 
-// Messages to publish.  Be lazy and use the same message for all range sensors.
-static sensor_msgs__msg__Range *range_msg = NULL;
-
-static void publish_range_1(void) {
-  // ToF so say infrared.
-  range_msg->radiation_type = sensor_msgs__msg__Range__INFRARED;
-  range_msg->field_of_view = 0.1;
-  range_msg->min_range = 0.1;
-  range_msg->max_range = 4.0;
-  range_msg->range = 1.1;
-  ESP_LOGI(TAG, "Sending range: %f", range_msg->range);
-  rcl_ret_t rc = rcl_publish(&publisher_range_1, range_msg, NULL);
+static void publish_battery_state(void) {
+  battery_state_msg->voltage = 1.3;
+  ESP_LOGI(TAG, "Sending msg: %f", battery_state_msg->voltage);
+  rcl_ret_t rc = rcl_publish(&publisher_battery_state, battery_state_msg, NULL);
   RCLC_UNUSED(rc);
 }
 
 static void timer_callback(rcl_timer_t *timer, int64_t last_call_time) {
   ESP_LOGI(TAG, "Timer called.");
   if (timer != NULL) {
-    publish_range_1();
+    publish_battery_state();
   }
 }
 
-static void subscription_callback_cmd_vel_1(const void *msg_in) {
-  ESP_LOGI(TAG, "%s called.", __func__);
+// TODO The sub callbacks could be moved to app_messages.h/c.
+static void subscription_callback_cmd_vel(const void *msg_in) {
+  const geometry_msgs__msg__Twist *msg =
+      (const geometry_msgs__msg__Twist *)msg_in;
+  ESP_LOGI(TAG, "%s called. ang.x %f", __func__, msg->angular.x);
 }
 
 void appMain(void *arg) {
   rcl_allocator_t allocator = rcl_get_default_allocator();
   rclc_support_t support;
 
-  // Create messages.
-  range_msg = sensor_msgs__msg__Range__create();
+  // Initialise messages.
+  battery_state_msg = sensor_msgs__msg__BatteryState__create();
 
-  // Create init_options.
+  // Create init_options
   RCCHECK(rclc_support_init(&support, 0, NULL, &allocator));
 
-  // Create node.
+  // Create node
   rcl_node_t node = rcl_get_zero_initialized_node();
   RCCHECK(rclc_node_init_default(&node, TAG, "", &support));
 
@@ -100,21 +89,12 @@ void appMain(void *arg) {
   ESP_LOGI(TAG, "Creating publishers");
 
   RCCHECK(rclc_publisher_init_default(
-      &publisher_range_1, &node,
-      ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Range),
-      k_range_1));
+      &publisher_battery_state, &node,
+      ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, BatteryState),
+      k_battery_state));
 
-  // Create timer.
-  ESP_LOGI(TAG, "Creating timers");
-  rcl_timer_t timer = rcl_get_zero_initialized_timer();
-  const unsigned int timer_timeout = 1000;
-  RCCHECK(rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(timer_timeout),
-                                  timer_callback));
-
-
-  RCCHECK(rclc_subscription_init_default(
-      &subscriber_cmd_vel_1, &node,
-      ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist), k_cmd_vel_1));
+  // Create subscribers.
+  ESP_LOGI(TAG, "Creating subscribers");
   /* If rclc_subscription_init_default() fails, these are some of the return
     values.  Most are defined in firmware/mcu_ws/install/include/rcl/types.h
     1 = RCL_RET_ERROR = RMW_RET_ERROR - This is most common.
@@ -127,6 +107,17 @@ void appMain(void *arg) {
     firmware/mcu_ws/ros2/rcl/rcl/src/rcl/subscription.c
   */
 
+  RCCHECK(rclc_subscription_init_default(
+      &subscriber_cmd_vel, &node,
+      ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist), k_cmd_vel));
+
+  // Create timer.
+  ESP_LOGI(TAG, "Creating timers");
+  rcl_timer_t timer = rcl_get_zero_initialized_timer();
+  const unsigned int timer_timeout = 1000;
+  RCCHECK(rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(timer_timeout),
+                                  timer_callback));
+
   // Create executor.
   ESP_LOGI(TAG, "Creating executor");
   rclc_executor_t executor = rclc_executor_get_zero_initialized_executor();
@@ -136,28 +127,24 @@ void appMain(void *arg) {
   RCCHECK(rclc_executor_set_timeout(&executor, RCL_MS_TO_NS(rcl_wait_timeout)));
   RCCHECK(rclc_executor_add_timer(&executor, &timer));
 
-  // Add subscribers.
-  ESP_LOGI(TAG, "Adding subscribers");
-
+  ESP_LOGI(TAG, "Adding subs");
   geometry_msgs__msg__Twist twist_msg;
   RCCHECK(rclc_executor_add_subscription(
-      &executor, &subscriber_cmd_vel_1, &twist_msg,
-      &subscription_callback_cmd_vel_1, ON_NEW_DATA));
+      &executor, &subscriber_cmd_vel, &twist_msg,
+      &subscription_callback_cmd_vel, ON_NEW_DATA));
 
-
-
-  // Spin until the power is disconnected or reset pressed.
+  // Spin forever.
   ESP_LOGI(TAG, "Spinning...");
   while (1) {
-    rclc_executor_spin_some(&executor, 100);
-    usleep(US_PER_TICK);
+    rclc_executor_spin(&executor);
   }
-
-  // Free resources.  Probably never called on the ESP32.
+  // Probably never get here but this is for completeness.
+  // Free resources.
   ESP_LOGI(TAG, "Free resources");
-  RCCHECK(rcl_publisher_fini(&publisher_range_1, &node))
+  RCCHECK(rcl_subscription_fini(&subscriber_cmd_vel, &node));
+  RCCHECK(rcl_publisher_fini(&publisher_battery_state, &node))
   RCCHECK(rcl_node_fini(&node))
-  sensor_msgs__msg__Range__destroy(range_msg);
-
+  sensor_msgs__msg__BatteryState__destroy(battery_state_msg);
+  // Delete this task!
   vTaskDelete(NULL);
 }
