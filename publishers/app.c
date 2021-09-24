@@ -12,7 +12,6 @@
 #include "freertos/task.h"
 #endif
 
-#include "drivers.h"
 #include "esp_log.h"
 #include "sensor_msgs/msg/range.h"
 
@@ -76,12 +75,12 @@ static sensor_msgs__msg__Range *range_6_msg = NULL;
 
 static void publish_range_1(void) {
   // ToF so say infrared.
-  msg->radiation_type = sensor_msgs__msg__Range__INFRARED;
-  msg->field_of_view = 0.1;
-  msg->min_range = 0.1;
-  msg->max_range = 4.0;
-  msg->range = 1.1;
-  ESP_LOGI(TAG, "Sending range: %f", msg->range);
+  range_1_msg->radiation_type = sensor_msgs__msg__Range__INFRARED;
+  range_1_msg->field_of_view = 0.1;
+  range_1_msg->min_range = 0.1;
+  range_1_msg->max_range = 4.0;
+  range_1_msg->range = 1.1;
+  ESP_LOGI(TAG, "Sending range: %f", range_1_msg->range);
   rcl_ret_t rc = rcl_publish(&publisher_range_1, range_1_msg, NULL);
   RCLC_UNUSED(rc);
 }
