@@ -40,15 +40,17 @@
 #define EXECUTOR_HANDLE_COUNT (TIMER_HANDLE_COUNT + SUBSCRIBER_HANDLE_COUNT)
 
 rcl_publisher_t publisher_battery_state;
-rcl_subscription_t subscriber_cmd_vel_1;
-// rcl_subscription_t subscriber_cmd_vel_2;
+// rcl_subscription_t subscriber_cmd_vel_1;
+rcl_subscription_t subscriber_cmd_vel_2;
 
 // Logging name.
 static const char *TAG = "swarm_trooper";
 // Standard topic names.
 static const char *k_battery_state = "battery_state";
-static const char *k_cmd_vel_1 = "cmd_vel_1";
-// static const char *k_cmd_vel_2 = "cmd_vel/2";
+// This caused add_subscriber to abort.
+// static const char *k_cmd_vel_1 = "cmd_vel/1";
+// static const char *k_cmd_vel_1 = "cmd_vel_1";
+static const char *k_cmd_vel_2 = "cmd_vel_2";
 // Messages to publish.
 static sensor_msgs__msg__BatteryState *battery_state_msg = NULL;
 
@@ -66,17 +68,17 @@ static void timer_callback(rcl_timer_t *timer, int64_t last_call_time) {
   }
 }
 
-static void subscription_callback_cmd_vel_1(const void *msg_in) {
-  const geometry_msgs__msg__Twist *msg =
-      (const geometry_msgs__msg__Twist *)msg_in;
-  ESP_LOGI(TAG, "%s called. ang.x %f", __func__, msg->angular.x);
-}
-
-// static void subscription_callback_cmd_vel_2(const void *msg_in) {
+// static void subscription_callback_cmd_vel_1(const void *msg_in) {
 //   const geometry_msgs__msg__Twist *msg =
 //       (const geometry_msgs__msg__Twist *)msg_in;
 //   ESP_LOGI(TAG, "%s called. ang.x %f", __func__, msg->angular.x);
 // }
+
+static void subscription_callback_cmd_vel_2(const void *msg_in) {
+  const geometry_msgs__msg__Twist *msg =
+      (const geometry_msgs__msg__Twist *)msg_in;
+  ESP_LOGI(TAG, "%s called. ang.x %f", __func__, msg->angular.x);
+}
 
 void appMain(void *arg) {
   rcl_allocator_t allocator = rcl_get_default_allocator();
@@ -114,13 +116,14 @@ void appMain(void *arg) {
     firmware/mcu_ws/ros2/rcl/rcl/src/rcl/subscription.c
   */
 
-  RCCHECK(rclc_subscription_init_default(
-      &subscriber_cmd_vel_1, &node,
-      ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist), k_cmd_vel_1));
-
   // RCCHECK(rclc_subscription_init_default(
-  //     &subscriber_cmd_vel_2, &node,
-  //     ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist), k_cmd_vel_2));
+  //     &subscriber_cmd_vel_1, &node,
+  //     ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist), k_cmd_vel_1));
+
+  RCCHECK(rclc_subscription_init_default(
+      &subscriber_cmd_vel_2, &node,
+      ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist), k_cmd_vel_2));
+      // Fails here.
 
   // Create timer.
   ESP_LOGI(TAG, "Creating timers");
@@ -139,15 +142,15 @@ void appMain(void *arg) {
   RCCHECK(rclc_executor_add_timer(&executor, &timer));
 
   ESP_LOGI(TAG, "Adding subs");
-  geometry_msgs__msg__Twist twist_msg_1;
-  RCCHECK(rclc_executor_add_subscription(
-      &executor, &subscriber_cmd_vel_1, &twist_msg_1,
-      &subscription_callback_cmd_vel_1, ON_NEW_DATA));
-
-  // geometry_msgs__msg__Twist twist_msg_2;
+  // geometry_msgs__msg__Twist twist_msg_1;
   // RCCHECK(rclc_executor_add_subscription(
-  //     &executor, &subscriber_cmd_vel_2, &twist_msg_2,
-  //     &subscription_callback_cmd_vel_2, ON_NEW_DATA));
+  //     &executor, &subscriber_cmd_vel_1, &twist_msg_1,
+  //     &subscription_callback_cmd_vel_1, ON_NEW_DATA));
+
+  geometry_msgs__msg__Twist twist_msg_2;
+  RCCHECK(rclc_executor_add_subscription(
+      &executor, &subscriber_cmd_vel_2, &twist_msg_2,
+      &subscription_callback_cmd_vel_2, ON_NEW_DATA));
 
   // Spin forever.
   ESP_LOGI(TAG, "Spinning...");
@@ -157,8 +160,8 @@ void appMain(void *arg) {
   // Probably never get here but this is for completeness.
   // Free resources.
   ESP_LOGI(TAG, "Free resources");
-  // RCCHECK(rcl_subscription_fini(&subscriber_cmd_vel_2, &node));
-  RCCHECK(rcl_subscription_fini(&subscriber_cmd_vel_1, &node));
+  RCCHECK(rcl_subscription_fini(&subscriber_cmd_vel_2, &node));
+  // RCCHECK(rcl_subscription_fini(&subscriber_cmd_vel_1, &node));
   RCCHECK(rcl_publisher_fini(&publisher_battery_state, &node))
   RCCHECK(rcl_node_fini(&node))
   sensor_msgs__msg__BatteryState__destroy(battery_state_msg);
