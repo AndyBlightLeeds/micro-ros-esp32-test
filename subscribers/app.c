@@ -47,7 +47,7 @@ rcl_subscription_t subscriber_cmd_vel_1;
 static const char *TAG = "swarm_trooper";
 // Standard topic names.
 static const char *k_battery_state = "battery_state";
-static const char *k_cmd_vel_1 = "cmd_vel/1";
+static const char *k_cmd_vel_1 = "cmd_vel_1";
 // static const char *k_cmd_vel_2 = "cmd_vel/2";
 // Messages to publish.
 static sensor_msgs__msg__BatteryState *battery_state_msg = NULL;
