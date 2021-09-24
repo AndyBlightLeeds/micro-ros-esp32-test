@@ -9,3 +9,9 @@ cp -rf ~/code/subscribers/ ~/ws/firmware/freertos_apps/apps
 cd ~/ws
 . ./install/local_setup.bash
 ros2 run micro_ros_setup build_firmware.sh
+
+echo
+echo "Flash using:"
+echo ". /install/local_setup.bash"
+echo "ros2 run micro_ros_setup flash_firmware.sh "
+echo

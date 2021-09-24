@@ -13,6 +13,7 @@
 #endif
 
 #include "esp_log.h"
+#include "geometry_msgs/msg/twist.h"
 #include "sensor_msgs/msg/range.h"
 
 #define RCCHECK(fn)                                                 \
@@ -38,17 +39,22 @@
 #define MS_PER_TICK (1000 / TICK_RATE_HZ)
 #define US_PER_TICK (MS_PER_TICK * 1000)
 
-// Number of executor handles: 1 timer, 5 subscribers, 0 services.
-// Publishers don't count as they are driven by the timer.
-// NOTE: UPDATE app-colcon.meta IF YOU CHANGE THIS VALUE!
-#define EXECUTOR_HANDLE_COUNT (1)
+/* Number of executor handles.
+ * Publishers don't count as they are driven by the timer.
+ * ********** IMPORTANT: CHANGE VALUES IN app-colcon.meta.  *********
+ */
+#define TIMER_HANDLE_COUNT (1)
+#define SUBSCRIBER_HANDLE_COUNT (1)
+#define EXECUTOR_HANDLE_COUNT (TIMER_HANDLE_COUNT + SUBSCRIBER_HANDLE_COUNT)
 
 rcl_publisher_t publisher_range_1;
+rcl_subscription_t subscriber_cmd_vel_1;
 
 // Logging name.
 static const char *TAG = "test";
 // Standard topic/service names.
 static const char *k_range_1 = "sensors/tof1";
+static const char *k_cmd_vel_1 = "cmd_vel_1";
 
 // Messages to publish.  Be lazy and use the same message for all range sensors.
 static sensor_msgs__msg__Range *range_msg = NULL;
@@ -70,6 +76,10 @@ static void timer_callback(rcl_timer_t *timer, int64_t last_call_time) {
   if (timer != NULL) {
     publish_range_1();
   }
+}
+
+static void subscription_callback_cmd_vel_1(const void *msg_in) {
+  ESP_LOGI(TAG, "%s called.", __func__);
 }
 
 void appMain(void *arg) {
@@ -109,6 +119,29 @@ void appMain(void *arg) {
   unsigned int rcl_wait_timeout = 1000;  // in ms
   RCCHECK(rclc_executor_set_timeout(&executor, RCL_MS_TO_NS(rcl_wait_timeout)));
   RCCHECK(rclc_executor_add_timer(&executor, &timer));
+
+  // Add subscribers.
+  ESP_LOGI(TAG, "Adding subscribers");
+  RCCHECK(rclc_subscription_init_default(
+      &subscriber_cmd_vel_1, &node,
+      ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist), k_cmd_vel_1));
+  /* If rclc_subscription_init_default() fails, these are some of the return
+    values.  Most are defined in firmware/mcu_ws/install/include/rcl/types.h
+    1 = RCL_RET_ERROR = RMW_RET_ERROR - This is most common.
+    10 = RCL_RET_BAD_ALLOC = RMW_RET_BAD_ALLOC
+    11 = RCL_RET_INVALID_ARGUMENT
+    100 = RCL_RET_ALREADY_INIT
+    103 = RCL_RET_TOPIC_NAME_INVALID
+    200 = RCL_RET_NODE_INVALID
+    Most errors originate from rcl_subscription_init in
+    firmware/mcu_ws/ros2/rcl/rcl/src/rcl/subscription.c
+  */
+
+  geometry_msgs__msg__Twist twist_msg;
+  RCCHECK(rclc_executor_add_subscription(
+      &executor, &subscriber_cmd_vel_1, &twist_msg,
+      &subscription_callback_cmd_vel_1, ON_NEW_DATA));
+
 
 
   // Spin until the power is disconnected or reset pressed.
