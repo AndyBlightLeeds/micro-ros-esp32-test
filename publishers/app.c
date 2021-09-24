@@ -44,11 +44,11 @@
 #define EXECUTOR_HANDLE_COUNT (1)
 
 rcl_publisher_t publisher_range_1;
-#if 0
 rcl_publisher_t publisher_range_2;
 rcl_publisher_t publisher_range_3;
 rcl_publisher_t publisher_range_4;
 rcl_publisher_t publisher_range_5;
+#if 0
 rcl_publisher_t publisher_range_6;
 #endif
 
@@ -56,32 +56,53 @@ rcl_publisher_t publisher_range_6;
 static const char *TAG = "test";
 // Standard topic/service names.
 static const char *k_range_1 = "sensors/tof1";
-#if 0
 static const char *k_range_2 = "sensors/tof2";
 static const char *k_range_3 = "sensors/tof3";
 static const char *k_range_4 = "sensors/tof4";
 static const char *k_range_5 = "sensors/tof5";
+#if 0
 static const char *k_range_6 = "sensors/tof6";
 #endif
-// Messages to publish.
-static sensor_msgs__msg__Range *range_1_msg = NULL;
-#if 0
-static sensor_msgs__msg__Range *range_2_msg = NULL;
-static sensor_msgs__msg__Range *range_3_msg = NULL;
-static sensor_msgs__msg__Range *range_4_msg = NULL;
-static sensor_msgs__msg__Range *range_5_msg = NULL;
-static sensor_msgs__msg__Range *range_6_msg = NULL;
-#endif
+// Messages to publish.  Be lazy and use the same message for all range sensors.
+static sensor_msgs__msg__Range *range_msg = NULL;
 
 static void publish_range_1(void) {
   // ToF so say infrared.
-  range_1_msg->radiation_type = sensor_msgs__msg__Range__INFRARED;
-  range_1_msg->field_of_view = 0.1;
-  range_1_msg->min_range = 0.1;
-  range_1_msg->max_range = 4.0;
-  range_1_msg->range = 1.1;
-  ESP_LOGI(TAG, "Sending range: %f", range_1_msg->range);
-  rcl_ret_t rc = rcl_publish(&publisher_range_1, range_1_msg, NULL);
+  range_msg->radiation_type = sensor_msgs__msg__Range__INFRARED;
+  range_msg->field_of_view = 0.1;
+  range_msg->min_range = 0.1;
+  range_msg->max_range = 4.0;
+  range_msg->range = 1.1;
+  ESP_LOGI(TAG, "Sending range: %f", range_msg->range);
+  rcl_ret_t rc = rcl_publish(&publisher_range_1, range_msg, NULL);
+  RCLC_UNUSED(rc);
+}
+
+static void publish_range_2(void) {
+  range_msg->range = 1.2;
+  ESP_LOGI(TAG, "Sending range: %f", range_msg->range);
+  rcl_ret_t rc = rcl_publish(&publisher_range_2, range_msg, NULL);
+  RCLC_UNUSED(rc);
+}
+
+static void publish_range_3(void) {
+  range_msg->range = 1.3;
+  ESP_LOGI(TAG, "Sending range: %f", range_msg->range);
+  rcl_ret_t rc = rcl_publish(&publisher_range_3, range_msg, NULL);
+  RCLC_UNUSED(rc);
+}
+
+static void publish_range_4(void) {
+  range_msg->range = 1.4;
+  ESP_LOGI(TAG, "Sending range: %f", range_msg->range);
+  rcl_ret_t rc = rcl_publish(&publisher_range_4, range_msg, NULL);
+  RCLC_UNUSED(rc);
+}
+
+static void publish_range_5(void) {
+  range_msg->range = 1.5;
+  ESP_LOGI(TAG, "Sending range: %f", range_msg->range);
+  rcl_ret_t rc = rcl_publish(&publisher_range_5, range_msg, NULL);
   RCLC_UNUSED(rc);
 }
 
@@ -89,6 +110,10 @@ static void timer_callback(rcl_timer_t *timer, int64_t last_call_time) {
   ESP_LOGI(TAG, "Timer called.");
   if (timer != NULL) {
     publish_range_1();
+    publish_range_2();
+    publish_range_3();
+    publish_range_4();
+    publish_range_5();
   }
 }
 
@@ -97,7 +122,7 @@ void appMain(void *arg) {
   rclc_support_t support;
 
   // Create messages.
-  range_1_msg = sensor_msgs__msg__Range__create();
+  range_msg = sensor_msgs__msg__Range__create();
 
   // Create init_options.
   RCCHECK(rclc_support_init(&support, 0, NULL, &allocator));
@@ -113,6 +138,26 @@ void appMain(void *arg) {
       &publisher_range_1, &node,
       ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Range),
       k_range_1));
+
+  RCCHECK(rclc_publisher_init_default(
+      &publisher_range_2, &node,
+      ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Range),
+      k_range_2));
+
+  RCCHECK(rclc_publisher_init_default(
+      &publisher_range_3, &node,
+      ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Range),
+      k_range_3));
+
+  RCCHECK(rclc_publisher_init_default(
+      &publisher_range_4, &node,
+      ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Range),
+      k_range_4));
+
+  RCCHECK(rclc_publisher_init_default(
+      &publisher_range_5, &node,
+      ROSIDL_GET_MSG_TYPE_SUPPORT(sensor_msgs, msg, Range),
+      k_range_5));
 
   // Create timer.
   ESP_LOGI(TAG, "Creating timers");
@@ -141,8 +186,12 @@ void appMain(void *arg) {
   // Free resources.  Probably never called on the ESP32.
   ESP_LOGI(TAG, "Free resources");
   RCCHECK(rcl_publisher_fini(&publisher_range_1, &node))
+  RCCHECK(rcl_publisher_fini(&publisher_range_2, &node))
+  RCCHECK(rcl_publisher_fini(&publisher_range_3, &node))
+  RCCHECK(rcl_publisher_fini(&publisher_range_4, &node))
+  RCCHECK(rcl_publisher_fini(&publisher_range_5, &node))
   RCCHECK(rcl_node_fini(&node))
-  sensor_msgs__msg__Range__destroy(range_1_msg);
+  sensor_msgs__msg__Range__destroy(range_msg);
 
   vTaskDelete(NULL);
 }
