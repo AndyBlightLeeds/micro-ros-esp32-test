@@ -111,17 +111,7 @@ void appMain(void *arg) {
   RCCHECK(rclc_timer_init_default(&timer, &support, RCL_MS_TO_NS(timer_timeout),
                                   timer_callback));
 
-  // Create executor.
-  ESP_LOGI(TAG, "Creating executor");
-  rclc_executor_t executor = rclc_executor_get_zero_initialized_executor();
-  RCCHECK(rclc_executor_init(&executor, &support.context, EXECUTOR_HANDLE_COUNT,
-                             &allocator));
-  unsigned int rcl_wait_timeout = 1000;  // in ms
-  RCCHECK(rclc_executor_set_timeout(&executor, RCL_MS_TO_NS(rcl_wait_timeout)));
-  RCCHECK(rclc_executor_add_timer(&executor, &timer));
 
-  // Add subscribers.
-  ESP_LOGI(TAG, "Adding subscribers");
   RCCHECK(rclc_subscription_init_default(
       &subscriber_cmd_vel_1, &node,
       ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist), k_cmd_vel_1));
@@ -136,6 +126,18 @@ void appMain(void *arg) {
     Most errors originate from rcl_subscription_init in
     firmware/mcu_ws/ros2/rcl/rcl/src/rcl/subscription.c
   */
+
+  // Create executor.
+  ESP_LOGI(TAG, "Creating executor");
+  rclc_executor_t executor = rclc_executor_get_zero_initialized_executor();
+  RCCHECK(rclc_executor_init(&executor, &support.context, EXECUTOR_HANDLE_COUNT,
+                             &allocator));
+  unsigned int rcl_wait_timeout = 1000;  // in ms
+  RCCHECK(rclc_executor_set_timeout(&executor, RCL_MS_TO_NS(rcl_wait_timeout)));
+  RCCHECK(rclc_executor_add_timer(&executor, &timer));
+
+  // Add subscribers.
+  ESP_LOGI(TAG, "Adding subscribers");
 
   geometry_msgs__msg__Twist twist_msg;
   RCCHECK(rclc_executor_add_subscription(
