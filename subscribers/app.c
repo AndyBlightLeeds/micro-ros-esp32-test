@@ -113,7 +113,12 @@ void appMain(void *arg) {
     103 = RCL_RET_TOPIC_NAME_INVALID
     200 = RCL_RET_NODE_INVALID
     Most errors originate from rcl_subscription_init in
-    firmware/mcu_ws/ros2/rcl/rcl/src/rcl/subscription.c
+    firmware/mcu_ws/uros/rcl/rcl/src/rcl/subscription.c
+
+    To cause subscription.c to be rebuilt use these commands:
+    $ ros2 run micro_ros_setup configure_firmware.sh subscribers -t udp -i 192.168.54.2 -p 8888
+    $ ros2 run micro_ros_setup build_firmware.sh
+    NOTE: The build is slow, so put lots of debugging in one go and then rebuild.
   */
 
   RCCHECK(rclc_subscription_init_default(
@@ -123,8 +128,9 @@ void appMain(void *arg) {
   RCCHECK(rclc_subscription_init_default(
       &subscriber_cmd_vel_2, &node,
       ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist), k_cmd_vel_2));
-      // Fails here with two subs but is OK when the only one.
-      // Therefore it is nothing to do with the code but something else.
+      // Fails here with two subs. Both subs work one at a time but not together.
+      // The first subscriber works but the second fails.
+      // Therefore it is nothing to do with the code but is something else.
 
   // Create timer.
   ESP_LOGI(TAG, "Creating timers");
