@@ -28,9 +28,48 @@ Follow [these instructions](docker/README.md) to setup the docker and workspace 
 
 This requires some patching. See branch `pr-allow-sub-directories`.
 
-## Fix limit of 5 publishers
+## Fix limit of 5 subscribers
 
-TODO
+After spending a day or so of pure frustration, I eventually found two problems.
+
+### app-colcon.meta
+
+Changing this file and building using `ros2 run micro_ros_setup build_firmware.sh` does not cause any limits previously defined to be updated.  Only a full rebuild updates the limits.  By limits, I mean this for services `"-DRMW_UXRCE_MAX_SUBSCRIPTIONS=1",`.  When you change any values in the `app-colcon.meta` file, you need to rebuild as follows:
+
+```c
+cd ~/ws
+. ./install/local_setup.bash
+ros2 run micro_ros_setup configure_firmware.sh subscribers -t udp -i 192.168.54.2 -p 8888
+ros2 run micro_ros_setup build_firmware.sh
+```
+
+NOTE: This full rebuild takes a while, about 6 minutes on my PC, so work out how many services, subscribers, etc. you need and set the values in `app-colcon.meta` accordingly.  The code can be updated later as you only need to make sure that you have allocated enough space.
+
+### client-host-colcon.meta
+
+The client also has limits on the number of subscribers etc. that it can use.  These are defined in the file `src/micro_ros_setup/config/host/generic/client-host-colcon.meta`.  The defaults are:
+
+```text
+...
+        "rmw_microxrcedds":{
+            "cmake-args":[
+                "-DRMW_UXRCE_TRANSPORT=udp",
+                "-DRMW_UXRCE_DEFAULT_UDP_IP=127.0.0.1",
+                "-DRMW_UXRCE_DEFAULT_UDP_PORT=8888",
+                "-DRMW_UXRCE_MAX_NODES=3",
+                "-DRMW_UXRCE_MAX_PUBLISHERS=5",
+                "-DRMW_UXRCE_MAX_SUBSCRIPTIONS=5",
+                "-DRMW_UXRCE_MAX_SERVICES=5",
+                "-DRMW_UXRCE_MAX_CLIENTS=5",
+                "-DRMW_UXRCE_STREAM_HISTORY=32",
+                "-DRMW_UXRCE_MAX_HISTORY=10",
+                "-DRMW_UXRCE_XML_BUFFER_LENGTH=1000"
+            ]
+        }
+...
+```
+
+Testing shows that 6 publishers and 6 subscribers work with these settings so it looks like some of these values are ignored.
 
 ## Fix limit of only one service
 

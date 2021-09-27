@@ -36,12 +36,16 @@
  * ********** IMPORTANT: CHANGE VALUES IN app-colcon.meta.  *********
  */
 #define TIMER_HANDLE_COUNT (1)
-#define SUBSCRIBER_HANDLE_COUNT (3)
+#define SUBSCRIBER_HANDLE_COUNT (6)
 #define EXECUTOR_HANDLE_COUNT (TIMER_HANDLE_COUNT + SUBSCRIBER_HANDLE_COUNT)
 
 rcl_publisher_t publisher_battery_state;
 rcl_subscription_t subscriber_cmd_vel_1;
 rcl_subscription_t subscriber_cmd_vel_2;
+rcl_subscription_t subscriber_cmd_vel_3;
+rcl_subscription_t subscriber_cmd_vel_4;
+rcl_subscription_t subscriber_cmd_vel_5;
+rcl_subscription_t subscriber_cmd_vel_6;
 
 // Logging name.
 static const char *TAG = "swarm_trooper";
@@ -51,6 +55,10 @@ static const char *k_battery_state = "battery_state";
 // static const char *k_cmd_vel_1 = "cmd_vel/1";
 static const char *k_cmd_vel_1 = "cmd_vel_1";
 static const char *k_cmd_vel_2 = "cmd_vel_2";
+static const char *k_cmd_vel_3 = "cmd_vel_3";
+static const char *k_cmd_vel_4 = "cmd_vel_4";
+static const char *k_cmd_vel_5 = "cmd_vel_5";
+static const char *k_cmd_vel_6 = "cmd_vel_6";
 // Messages to publish.
 static sensor_msgs__msg__BatteryState *battery_state_msg = NULL;
 
@@ -75,6 +83,30 @@ static void subscription_callback_cmd_vel_1(const void *msg_in) {
 }
 
 static void subscription_callback_cmd_vel_2(const void *msg_in) {
+  const geometry_msgs__msg__Twist *msg =
+      (const geometry_msgs__msg__Twist *)msg_in;
+  ESP_LOGI(TAG, "%s called. ang.x %f", __func__, msg->angular.x);
+}
+
+static void subscription_callback_cmd_vel_3(const void *msg_in) {
+  const geometry_msgs__msg__Twist *msg =
+      (const geometry_msgs__msg__Twist *)msg_in;
+  ESP_LOGI(TAG, "%s called. ang.x %f", __func__, msg->angular.x);
+}
+
+static void subscription_callback_cmd_vel_4(const void *msg_in) {
+  const geometry_msgs__msg__Twist *msg =
+      (const geometry_msgs__msg__Twist *)msg_in;
+  ESP_LOGI(TAG, "%s called. ang.x %f", __func__, msg->angular.x);
+}
+
+static void subscription_callback_cmd_vel_5(const void *msg_in) {
+  const geometry_msgs__msg__Twist *msg =
+      (const geometry_msgs__msg__Twist *)msg_in;
+  ESP_LOGI(TAG, "%s called. ang.x %f", __func__, msg->angular.x);
+}
+
+static void subscription_callback_cmd_vel_6(const void *msg_in) {
   const geometry_msgs__msg__Twist *msg =
       (const geometry_msgs__msg__Twist *)msg_in;
   ESP_LOGI(TAG, "%s called. ang.x %f", __func__, msg->angular.x);
@@ -132,6 +164,22 @@ void appMain(void *arg) {
       // The first subscriber works but the second fails.
       // Therefore it is nothing to do with the code but is something else.
 
+  RCCHECK(rclc_subscription_init_default(
+      &subscriber_cmd_vel_3, &node,
+      ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist), k_cmd_vel_3));
+
+  RCCHECK(rclc_subscription_init_default(
+      &subscriber_cmd_vel_4, &node,
+      ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist), k_cmd_vel_4));
+
+  RCCHECK(rclc_subscription_init_default(
+      &subscriber_cmd_vel_5, &node,
+      ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist), k_cmd_vel_5));
+
+  RCCHECK(rclc_subscription_init_default(
+      &subscriber_cmd_vel_5, &node,
+      ROSIDL_GET_MSG_TYPE_SUPPORT(geometry_msgs, msg, Twist), k_cmd_vel_6));
+
   // Create timer.
   ESP_LOGI(TAG, "Creating timers");
   rcl_timer_t timer = rcl_get_zero_initialized_timer();
@@ -159,6 +207,26 @@ void appMain(void *arg) {
       &executor, &subscriber_cmd_vel_2, &twist_msg_2,
       &subscription_callback_cmd_vel_2, ON_NEW_DATA));
 
+  geometry_msgs__msg__Twist twist_msg_3;
+  RCCHECK(rclc_executor_add_subscription(
+      &executor, &subscriber_cmd_vel_3, &twist_msg_3,
+      &subscription_callback_cmd_vel_3, ON_NEW_DATA));
+
+  geometry_msgs__msg__Twist twist_msg_4;
+  RCCHECK(rclc_executor_add_subscription(
+      &executor, &subscriber_cmd_vel_4, &twist_msg_4,
+      &subscription_callback_cmd_vel_4, ON_NEW_DATA));
+
+  geometry_msgs__msg__Twist twist_msg_5;
+  RCCHECK(rclc_executor_add_subscription(
+      &executor, &subscriber_cmd_vel_5, &twist_msg_5,
+      &subscription_callback_cmd_vel_5, ON_NEW_DATA));
+
+  geometry_msgs__msg__Twist twist_msg_6;
+  RCCHECK(rclc_executor_add_subscription(
+      &executor, &subscriber_cmd_vel_6, &twist_msg_6,
+      &subscription_callback_cmd_vel_6, ON_NEW_DATA));
+
   // Spin forever.
   ESP_LOGI(TAG, "Spinning...");
   while (1) {
@@ -167,6 +235,10 @@ void appMain(void *arg) {
   // Probably never get here but this is for completeness.
   // Free resources.
   ESP_LOGI(TAG, "Free resources");
+  RCCHECK(rcl_subscription_fini(&subscriber_cmd_vel_6, &node));
+  RCCHECK(rcl_subscription_fini(&subscriber_cmd_vel_5, &node));
+  RCCHECK(rcl_subscription_fini(&subscriber_cmd_vel_4, &node));
+  RCCHECK(rcl_subscription_fini(&subscriber_cmd_vel_3, &node));
   RCCHECK(rcl_subscription_fini(&subscriber_cmd_vel_2, &node));
   RCCHECK(rcl_subscription_fini(&subscriber_cmd_vel_1, &node));
   RCCHECK(rcl_publisher_fini(&publisher_battery_state, &node))
