@@ -36,6 +36,7 @@ Now we configure the IP address of the server and the Wi-Fi connection details.
 . ./install/local_setup.bash
 ros2 run micro_ros_setup build_firmware.sh menuconfig
 ```
+
 Go to the micro-ROS Transport Settings → WiFi Configuration menu and fill your WiFi SSID and password. Save your changes, exit the interactive menu.
 
 Change the IP address from the default to that of your host PC by modifying the option `-DRMW_UXRCE_DEFAULT_UDP_IP=192.168.1.1` in the file `firmware/mcu_ws/colcon.meta`.
@@ -59,6 +60,23 @@ docker run -it --rm --net=host microros/micro-ros-agent:foxy udp4 --port 8888
 If you examine the output from the agent, you should see messages being sent and received.  You may need to reboot the ESP32 (press and release the EM button) for the device to connect.
 
 At this point, run the script `docker/commit.bash` to save the image of the docker for future use.
+
+## Build the agent
+
+To do any useful work, you'll need your own version of the microROS agent.  Build it like this:
+
+```bash
+cd ~/ws
+./setup_agent.sh
+```
+
+Once built, I normally attach another shell to the docker and then run the agent in the new shell.
+
+```bash
+cd ~/ws
+. ./install/local_setup.bash
+ros2 run micro_ros_agent micro_ros_agent udp4 --port 8888
+```
 
 ## Set up joystick
 

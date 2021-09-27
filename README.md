@@ -28,13 +28,24 @@ Follow [these instructions](docker/README.md) to setup the docker and workspace 
 
 This requires some patching. See branch `pr-allow-sub-directories`.
 
-## Fix limit of 5 publishers
+## Fix limit of 5 subscribers
 
-TODO
+After spending a day or so of pure frustration, I eventually found the problem.  The test code can be found on the branch `multi-subscribers-test`.
+
+Changing the file `app-colcon.meta` and building using `ros2 run micro_ros_setup build_firmware.sh` does not cause any limits previously defined to be updated.  Only a full rebuild updates the limits.  By limits, I mean this for services `"-DRMW_UXRCE_MAX_SUBSCRIPTIONS=1",`.  When you change any values in the `app-colcon.meta` file, you need to rebuild as follows:
+
+```c
+cd ~/ws
+. ./install/local_setup.bash
+ros2 run micro_ros_setup configure_firmware.sh subscribers -t udp -i 192.168.54.2 -p 8888
+ros2 run micro_ros_setup build_firmware.sh
+```
+
+NOTE: This full rebuild takes a while, about 6 minutes on my PC, so work out how many services, subscribers, etc. you need and set the values in `app-colcon.meta` accordingly.  The code can be updated later as you only need to make sure that you have allocated enough space.
 
 ## Fix limit of only one service
 
-TODO
+
 
 ## Allow autonomous working
 
