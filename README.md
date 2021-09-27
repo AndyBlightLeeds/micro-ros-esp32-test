@@ -32,6 +32,8 @@ This requires some patching. See branch `pr-allow-sub-directories`.
 
 After spending a day or so of pure frustration, I eventually found the problem.  The test code can be found on the branch `multi-subscribers-test`.
 
+When I was debugging the problem, the function `rclc_subscription_init_default()` failed with the value 1.  To debug the problem further, I added a unique `printf` to every branch inside this function in the file `firmware/mcu_ws/uros/rcl/rcl/src/rcl/subscription.c`.  To cause `subscription.c to` be rebuilt, I used the commands in the previous section.  This was also how I found out that changes to the `app-colcon.meta` file was being ignored by the normal build command.  With the aid of the `printf`s, I was able to find out that the call to `rmw_create_subscription`  was failing.  Adding yet more debug showed that it `failed to allocate memory` when `app-colcon.meta` and the app was changed to add another subscriber.
+
 Changing the file `app-colcon.meta` and building using `ros2 run micro_ros_setup build_firmware.sh` does not cause any limits previously defined to be updated.  Only a full rebuild updates the limits.  By limits, I mean this for services `"-DRMW_UXRCE_MAX_SUBSCRIPTIONS=1",`.  When you change any values in the `app-colcon.meta` file, you need to rebuild as follows:
 
 ```c
@@ -45,7 +47,9 @@ NOTE: This full rebuild takes a while, about 6 minutes on my PC, so work out how
 
 ## Fix limit of only one service
 
+This proved to be a simple lack of understanding on my part.  All I needed to do was to set `-DRMW_UXRCE_MAX_CLIENTS` in `app-colcon.meta` to match number of service clients.  I thought they were services, not clients (no idea what the difference is!), so went down the wrong route.
 
+To find this out, I added lots of `printf`s to the files `firmware/mcu_ws/uros/rcl/rcl/src/rcl/client.c` and `firmware/mcu_ws/uros/rmw_microxrcedds/rmw_microxrcedds_c/src/rmw_client.c`, did a full rebuild and found out that the return value of `1` meant that there was no memory.
 
 ## Allow autonomous working
 
